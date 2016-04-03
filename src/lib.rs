@@ -1,3 +1,6 @@
+//! Experimental extensions to the `std::time` module.
+#![warn(missing_docs)]
+
 extern crate muldiv;
 
 pub use duration::DurationExt;
