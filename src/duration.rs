@@ -8,8 +8,7 @@ const NANOS_PER_MILLI: u64 = NANOS_PER_SEC / MILLIS_PER_SEC;
 pub trait DurationExt {
     /// Returns the number of whole milliseconds contained in this `Duration`.
     ///
-    /// Returns `None` if the number of milliseconds exceeds the capacity of a
-    /// `u64.
+    /// Returns `None` if the value exceeds the capacity of a `u64.
     fn as_millis(&self) -> Option<u64>;
 }
 
