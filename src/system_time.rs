@@ -3,6 +3,7 @@ use std::i64;
 
 use DurationExt;
 
+/// Extensions to the `SystemTime` type.
 pub trait SystemTimeExt {
     /// Returns the number of whole milliseconds between this time and the Unix
     /// Epoch.

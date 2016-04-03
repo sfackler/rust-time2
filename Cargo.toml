@@ -7,3 +7,4 @@ authors = ["Steven Fackler <sfackler@gmail.com>"]
 beta = []
 
 [dependencies]
+muldiv = "0.1"
