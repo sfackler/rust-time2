@@ -28,7 +28,7 @@ pub trait DurationExt {
 impl DurationExt for Duration {
     fn as_millis(&self) -> Option<u64> {
         self.as_secs()
-            .checked_mul(1000)
+            .checked_mul(MILLIS_PER_SEC)
             .and_then(|m| m.checked_add(self.subsec_nanos() as u64 / NANOS_PER_MILLI))
     }
 
