@@ -41,7 +41,7 @@ impl DurationExt for Duration {
 
         let secs = self.as_secs()
                        .checked_mul(rhs)
-                       .and_then(|s| s.checked_add(total_nanos / NANOS_PER_SEC as u64))
+                       .and_then(|s| s.checked_add(total_nanos / NANOS_PER_SEC))
                        .and_then(|s| s.checked_add(self.subsec_nanos() as u64 * a))
                        .expect("overflow when multiplying duration");
         debug_assert!(nanos < NANOS_PER_SEC as u32);
