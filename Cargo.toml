@@ -13,3 +13,4 @@ beta = []
 
 [dev-dependencies]
 quickcheck = "0.2"
+rand = "0.3"

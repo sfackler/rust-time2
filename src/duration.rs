@@ -123,9 +123,15 @@ fn div_u128(u1: u64, u0: u64, v: u64) -> Option<u64> {
 #[cfg(test)]
 mod test {
     use std::time::Duration;
-    use quickcheck::{quickcheck, TestResult};
+    use std::usize;
+    use quickcheck::{Testable, QuickCheck, TestResult, StdGen};
+    use rand;
 
     use super::*;
+
+    fn quickcheck<A: Testable>(f: A) {
+        QuickCheck::new().gen(StdGen::new(rand::thread_rng(), usize::max_value())).quickcheck(f);
+    }
 
     #[test]
     fn as_millis() {
@@ -199,7 +205,10 @@ mod test {
                 return TestResult::discard();
             }
 
-            TestResult::from_bool(dur * rhs == dur.mul_u64(rhs as u64).unwrap())
+            match dur.mul_u64(rhs as u64) {
+                Some(r) => TestResult::from_bool(dur * rhs == r),
+                None => TestResult::must_fail(move || { dur * rhs; }),
+            }
         }
         quickcheck(prop1 as fn(_, _) -> _)
     }

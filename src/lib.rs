@@ -3,6 +3,8 @@
 
 #[cfg(test)]
 extern crate quickcheck;
+#[cfg(test)]
+extern crate rand;
 
 pub use duration::DurationExt;
 #[cfg(feature = "beta")]
