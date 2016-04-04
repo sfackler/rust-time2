@@ -11,4 +11,5 @@ readme = "README.md"
 [features]
 beta = []
 
-[dependencies]
+[dev-dependencies]
+quickcheck = "0.2"

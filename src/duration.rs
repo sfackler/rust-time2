@@ -5,7 +5,7 @@ const MILLIS_PER_SEC: u64 = 1_000;
 const NANOS_PER_MILLI: u64 = NANOS_PER_SEC / MILLIS_PER_SEC;
 
 /// Extensions to the `Duration` type.
-pub trait DurationExt {
+pub trait DurationExt: Sized {
     /// Returns the number of whole milliseconds contained in this `Duration`.
     ///
     /// Returns `None` if the value exceeds the capacity of a `u64`.
@@ -15,13 +15,13 @@ pub trait DurationExt {
     ///
     /// Like the `Mul` implementation for `Duration`, except that it takes a
     /// `u64` instead of a `u32.
-    fn mul_u64(&self, rhs: u64) -> Self;
+    fn mul_u64(&self, rhs: u64) -> Option<Self>;
 
     /// Divides this `Duration`.
     ///
     /// Like the `Div` implementation for `Duration`, except that it takes a
     /// `u64` instead of a `u32`.
-    fn div_u64(&self, rhs: u64) -> Self;
+    fn div_u64(&self, rhs: u64) -> Option<Self>;
 }
 
 impl DurationExt for Duration {
@@ -31,30 +31,26 @@ impl DurationExt for Duration {
             .and_then(|m| m.checked_add(self.subsec_nanos() as u64 / NANOS_PER_MILLI))
     }
 
-    fn mul_u64(&self, rhs: u64) -> Duration {
+    fn mul_u64(&self, rhs: u64) -> Option<Duration> {
         // for nanos, treat rhs as (NANOS_PER_SEC * a + b), where b < NANOS_PER_SEC
         let a = rhs / NANOS_PER_SEC;
         let b = rhs % NANOS_PER_SEC;
         let total_nanos = self.subsec_nanos() as u64 * b; // can't overflow
         let nanos = (total_nanos % NANOS_PER_SEC as u64) as u32;
 
-        let secs = self.as_secs()
-                       .checked_mul(rhs)
-                       .and_then(|s| s.checked_add(total_nanos / NANOS_PER_SEC))
-                       .and_then(|s| s.checked_add(self.subsec_nanos() as u64 * a))
-                       .expect("overflow when multiplying duration");
-        debug_assert!(nanos < NANOS_PER_SEC as u32);
-        Duration::new(secs, nanos)
+        self.as_secs()
+            .checked_mul(rhs)
+            .and_then(|s| s.checked_add(total_nanos / NANOS_PER_SEC))
+            .and_then(|s| s.checked_add(self.subsec_nanos() as u64 * a))
+            .map(|secs| Duration::new(secs, nanos))
     }
 
-    fn div_u64(&self, rhs: u64) -> Duration {
+    fn div_u64(&self, rhs: u64) -> Option<Duration> {
         let secs = self.as_secs() / rhs;
         let carry = self.as_secs() - secs * rhs;
-        let extra_nanos = mul_div(carry, NANOS_PER_SEC, rhs)
-                              .expect("overflow when dividing duration");
-        let nanos = (self.subsec_nanos() as u64 / rhs + extra_nanos) as u32;
-        debug_assert!(nanos < NANOS_PER_SEC as u32);
-        Duration::new(secs, nanos)
+        mul_div(carry, NANOS_PER_SEC, rhs)
+            .map(|extra_nanos| self.subsec_nanos() as u64 / rhs + extra_nanos)
+            .map(|nanos| Duration::new(secs, nanos as u32))
     }
 }
 
@@ -127,33 +123,84 @@ fn div_u128(u1: u64, u0: u64, v: u64) -> Option<u64> {
 #[cfg(test)]
 mod test {
     use std::time::Duration;
+    use quickcheck::{quickcheck, TestResult};
 
     use super::*;
 
     #[test]
     fn as_millis() {
-        assert_eq!(Some(1100), Duration::new(1, 100_000_999).as_millis());
-        assert_eq!(None, Duration::from_secs(1 << 60).as_millis());
+        fn prop1(millis: u64) -> bool {
+            Duration::from_millis(millis).as_millis() == Some(millis)
+        }
+        quickcheck(prop1 as fn(_) -> _);
+
+        fn prop2(dur: Duration) -> TestResult {
+            let millis = match dur.as_millis() {
+                Some(millis) => millis,
+                None => return TestResult::discard(),
+            };
+            TestResult::from_bool((dur - Duration::from_millis(millis)) < Duration::from_millis(1))
+        }
+        quickcheck(prop2 as fn(_) -> _);
     }
 
     #[test]
     fn mul_u64() {
-        assert_eq!(Duration::new(0, 1).mul_u64(2), Duration::new(0, 2));
-        assert_eq!(Duration::new(1, 1).mul_u64(3), Duration::new(3, 3));
-        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4), Duration::new(2, 4));
-        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4000),
+        assert_eq!(Duration::new(0, 1).mul_u64(2).unwrap(), Duration::new(0, 2));
+        assert_eq!(Duration::new(1, 1).mul_u64(3).unwrap(), Duration::new(3, 3));
+        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4).unwrap(), Duration::new(2, 4));
+        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4000).unwrap(),
                    Duration::new(2000, 4000));
-        assert_eq!(Duration::new(0, 500_000_000).mul_u64(1 << 63),
+        assert_eq!(Duration::new(0, 500_000_000).mul_u64(1 << 63).unwrap(),
                    Duration::new(1 << 62, 0));
     }
 
     #[test]
     fn div_u64() {
-        assert_eq!(Duration::new(0, 1).div_u64(2), Duration::new(0, 0));
-        assert_eq!(Duration::new(1, 1).div_u64(3), Duration::new(0, 333_333_333));
-        assert_eq!(Duration::new(99, 999_999_000).div_u64(100),
+        assert_eq!(Duration::new(0, 1).div_u64(2).unwrap(), Duration::new(0, 0));
+        assert_eq!(Duration::new(1, 1).div_u64(3).unwrap(), Duration::new(0, 333_333_333));
+        assert_eq!(Duration::new(99, 999_999_000).div_u64(100).unwrap(),
                    Duration::new(0, 999_999_990));
-        assert_eq!(Duration::new(1 << 62, 0).div_u64(1 << 63),
+        assert_eq!(Duration::new(1 << 62, 0).div_u64(1 << 63).unwrap(),
                    Duration::new(0, 500_000_000));
+    }
+
+    #[test]
+    fn mul_div() {
+        fn prop1(dur: Duration, rhs: u64) -> TestResult {
+            if rhs == 0 {
+                return TestResult::discard();
+            }
+            let result = match dur.mul_u64(rhs) {
+                Some(r) => r.div_u64(rhs).unwrap(),
+                None => return TestResult::discard(),
+            };
+            TestResult::from_bool(result == dur)
+        }
+        quickcheck(prop1 as fn(_, _) -> _)
+    }
+
+    #[test]
+    fn div_u32() {
+        fn prop1(dur: Duration, rhs: u32) -> TestResult {
+            if rhs == 0 {
+                return TestResult::discard();
+            }
+
+            TestResult::from_bool(dur / rhs == dur.div_u64(rhs as u64).unwrap())
+        }
+        quickcheck(prop1 as fn(_, _) -> _)
+    }
+
+    #[test]
+    fn mul_u32() {
+        fn prop1(dur: Duration, rhs: u32) -> TestResult {
+            if rhs == 0 {
+                return TestResult::discard();
+            }
+
+            TestResult::from_bool(dur * rhs == dur.mul_u64(rhs as u64).unwrap())
+        }
+        quickcheck(prop1 as fn(_, _) -> _)
     }
 }
