@@ -1,4 +1,4 @@
-# rust-socks
+# rust-time2
 [![Build Status](https://travis-ci.org/sfackler/rust-time2.svg?branch=master)](https://travis-ci.org/sfackler/rust-time2)
 
 [Documentation](https://sfackler.github.io/rust-time2/doc/v0.1.0/time2)
