@@ -12,4 +12,3 @@ readme = "README.md"
 beta = []
 
 [dependencies]
-muldiv = "0.1"
