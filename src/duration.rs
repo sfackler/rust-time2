@@ -14,7 +14,7 @@ pub trait DurationExt: Sized {
     /// Multiplies this `Duration`.
     ///
     /// Like the `Mul` implementation for `Duration`, except that it takes a
-    /// `u64` instead of a `u32.
+    /// `u64` instead of a `u32`.
     fn mul_u64(&self, rhs: u64) -> Option<Self>;
 
     /// Divides this `Duration`.
