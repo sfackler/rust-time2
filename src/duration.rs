@@ -57,7 +57,11 @@ impl DurationExt for Duration {
 fn mul_div(a: u64, b: u64, c: u64) -> Option<u64> {
     let m0 = a.wrapping_mul(b);
     let m1 = mul_u64_hi(a, b);
-    div_u128(m1, m0, c)
+    if m1 > 0 {
+        div_u128(m1, m0, c)
+    } else {
+        Some(m0 / c)
+    }
 }
 
 // hacker's delight 2nd ed 8-2
