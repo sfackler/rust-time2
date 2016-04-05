@@ -17,12 +17,8 @@ pub trait SystemTimeExt {
 impl SystemTimeExt for SystemTime {
     fn as_unix_millis(&self) -> Option<i64> {
         match self.duration_since(UNIX_EPOCH) {
-            Ok(d) => {
-                d.as_millis().and_then(to_i64)
-            }
-            Err(e) => {
-                e.duration().as_millis().and_then(to_i64).map(|n| -n)
-            }
+            Ok(d) => d.as_millis().and_then(to_i64),
+            Err(e) => e.duration().as_millis().and_then(to_i64).map(|n| -n),
         }
     }
 }
@@ -43,8 +39,11 @@ mod test {
 
     #[test]
     fn as_unix_millis() {
-        assert_eq!(Some(100), (UNIX_EPOCH + Duration::from_millis(100)).as_unix_millis());
-        assert_eq!(Some(-100), (UNIX_EPOCH - Duration::from_millis(100)).as_unix_millis());
-        assert_eq!(None, (UNIX_EPOCH - Duration::from_secs(1 << 60)).as_unix_millis());
+        assert_eq!(Some(100),
+                   (UNIX_EPOCH + Duration::from_millis(100)).as_unix_millis());
+        assert_eq!(Some(-100),
+                   (UNIX_EPOCH - Duration::from_millis(100)).as_unix_millis());
+        assert_eq!(None,
+                   (UNIX_EPOCH - Duration::from_secs(1 << 60)).as_unix_millis());
     }
 }

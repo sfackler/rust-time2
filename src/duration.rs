@@ -78,7 +78,7 @@ fn mul_u64_hi(u: u64, v: u64) -> u64 {
     u1 * v1 + w2 + (w1 >> 32)
 }
 
-//hacker's delight 2nd ed 9-3
+// hacker's delight 2nd ed 9-3
 fn div_u128(u1: u64, u0: u64, v: u64) -> Option<u64> {
     let b = 0x1_0000_0000;
 
@@ -158,7 +158,8 @@ mod test {
     fn mul_u64() {
         assert_eq!(Duration::new(0, 1).mul_u64(2).unwrap(), Duration::new(0, 2));
         assert_eq!(Duration::new(1, 1).mul_u64(3).unwrap(), Duration::new(3, 3));
-        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4).unwrap(), Duration::new(2, 4));
+        assert_eq!(Duration::new(0, 500_000_001).mul_u64(4).unwrap(),
+                   Duration::new(2, 4));
         assert_eq!(Duration::new(0, 500_000_001).mul_u64(4000).unwrap(),
                    Duration::new(2000, 4000));
         assert_eq!(Duration::new(0, 500_000_000).mul_u64(1 << 63).unwrap(),
@@ -168,7 +169,8 @@ mod test {
     #[test]
     fn div_u64() {
         assert_eq!(Duration::new(0, 1).div_u64(2).unwrap(), Duration::new(0, 0));
-        assert_eq!(Duration::new(1, 1).div_u64(3).unwrap(), Duration::new(0, 333_333_333));
+        assert_eq!(Duration::new(1, 1).div_u64(3).unwrap(),
+                   Duration::new(0, 333_333_333));
         assert_eq!(Duration::new(99, 999_999_000).div_u64(100).unwrap(),
                    Duration::new(0, 999_999_990));
         assert_eq!(Duration::new(1 << 62, 0).div_u64(1 << 63).unwrap(),
@@ -211,7 +213,11 @@ mod test {
 
             match dur.mul_u64(rhs as u64) {
                 Some(r) => TestResult::from_bool(dur * rhs == r),
-                None => TestResult::must_fail(move || { dur * rhs; }),
+                None => {
+                    TestResult::must_fail(move || {
+                        dur * rhs;
+                    })
+                }
             }
         }
         quickcheck(prop1 as fn(_, _) -> _)
